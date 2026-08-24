@@ -1,0 +1,15 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "My Shows" },
+    { "file": "ShowDetail.dc.html", "x": 470, "y": 0, "w": 390, "h": 844, "title": "Show detail" },
+    { "file": "Episodes.dc.html", "x": 940, "y": 0, "w": 390, "h": 844, "title": "Episode checklist" },
+    { "file": "Browse.dc.html", "x": 1410, "y": 0, "w": 390, "h": 844, "title": "Browse / discover" },
+    { "file": "DirectionB.dc.html", "x": 0, "y": 1080, "w": 390, "h": 844, "title": "Direction B — Logbook" },
+    { "file": "DirectionC.dc.html", "x": 470, "y": 1080, "w": 390, "h": 844, "title": "Direction C — Signal" }
+  ],
+  "annotations": [
+    { "id": "flow-note", "x": 0, "y": -190, "w": 620, "text": "DIRECTION A — \"Late Night\"\nThe whole loop in one direction: your shows with live progress, a show page, the episode checklist, and browsing to add something new.\nThe check buttons on My Shows and the checkboxes in the episode list really work — tap them and the bars move." },
+    { "id": "alt-note", "x": 0, "y": 900, "w": 620, "text": "TWO OTHER LOOKS — same My Shows screen, different aesthetic\nB \"Logbook\": paper and ink, and one tick per episode instead of a bar — you see the actual episodes left, not a percentage.\nC \"Signal\": dark terminal, segmented bars, and a pace label (on pace / 2 behind).\nTell me which direction feels right and I'll build the rest of the screens in it." }
+  ],
+  "launch": { "view": "canvas" }
+}

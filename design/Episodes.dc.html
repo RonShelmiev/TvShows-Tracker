@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Archivo', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #e8a33d; } a:hover { color: #f2bd6b; }
+    button { font-family: inherit; border: 0; background: none; padding: 0; cursor: pointer; color: inherit; text-align: left; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #100e0c; color: #f4efe8; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="padding: 54px 20px 0 20px; display: flex; align-items: center; gap: 12px;">
+    <button aria-label="Back" style="width: 44px; height: 44px; margin-left: -10px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f4efe8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5l-7 7 7 7"></path></svg>
+    </button>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8078;">Vault City</div>
+      <div style="font-family: 'Archivo Black', 'Helvetica Neue', sans-serif; font-size: 22px;">Season 3</div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 8px; padding: 16px 20px 0 20px;">
+    <div style="width: 52px; height: 40px; border-radius: 11px; background: #1c1917; color: #6f665f; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px;">S1</div>
+    <div style="width: 52px; height: 40px; border-radius: 11px; background: #1c1917; color: #6f665f; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px;">S2</div>
+    <div style="width: 52px; height: 40px; border-radius: 11px; background: #e8a33d; color: #171009; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500;">S3</div>
+    <div style="width: 52px; height: 40px; border-radius: 11px; background: #1c1917; color: #6f665f; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px;">S4</div>
+  </div>
+
+  <div style="padding: 18px 20px 12px 20px; display: flex; flex-direction: column; gap: 9px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <span style="font-size: 13px; color: #b8ada3;">{{watched}} of {{total}} watched this season</span>
+      <button onClick="{{markAll}}" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #e8a33d;">Mark season</button>
+    </div>
+    <div style="height: 8px; border-radius: 99px; background: #2a2522; overflow: hidden;">
+      <div style="width: {{pct}}%; height: 100%; border-radius: 99px; background: #e8a33d;"></div>
+    </div>
+  </div>
+
+  <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+    <sc-for list="{{episodes}}" as="ep" hint-placeholder-count="9">
+      <button onClick="{{ep.toggle}}" style="display: flex; align-items: center; gap: 14px; padding: 10px 20px; width: 100%; box-sizing: border-box; background: {{ep.rowBg}};">
+        <div style="width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%; border: 1.5px solid {{ep.markBorder}}; background: {{ep.markBg}}; display: flex; align-items: center; justify-content: center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ep.markInk}}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+        </div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8a8078; flex: 0 0 auto;">{{ep.code}}</span>
+            <span style="font-size: 15px; font-weight: 500; color: {{ep.titleColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ep.title}}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #6f665f;">{{ep.runtime}} min · {{ep.date}}</span>
+            <sc-if value="{{ep.isNext}}" hint-placeholder-val="{{true}}">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #171009; background: #e8a33d; padding: 3px 6px; border-radius: 5px;">Next up</span>
+            </sc-if>
+          </div>
+        </div>
+      </button>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview": {"width": 390, "height": 844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      episodes: [
+        { n: 1, title: 'Cold Open', runtime: 54, date: '2 Jul', seen: true },
+        { n: 2, title: 'Tuesday People', runtime: 51, date: '9 Jul', seen: true },
+        { n: 3, title: 'The Ninth Floor', runtime: 49, date: '16 Jul', seen: true },
+        { n: 4, title: 'Salt', runtime: 52, date: '23 Jul', seen: true },
+        { n: 5, title: 'Little Republic', runtime: 55, date: '30 Jul', seen: true },
+        { n: 6, title: 'A Small Favour', runtime: 47, date: '6 Aug', seen: true },
+        { n: 7, title: 'The Long Drive', runtime: 52, date: '13 Aug', seen: false },
+        { n: 8, title: 'Weather Permitting', runtime: 50, date: '20 Aug', seen: false },
+        { n: 9, title: 'Reservoir', runtime: 53, date: '27 Aug', seen: false },
+        { n: 10, title: 'Vault City', runtime: 61, date: '3 Sep', seen: false }
+      ]
+    };
+  }
+
+  toggle(n) {
+    this.setState(function (s) {
+      return {
+        episodes: s.episodes.map(function (e) {
+          return e.n === n ? Object.assign({}, e, { seen: !e.seen }) : e;
+        })
+      };
+    });
+  }
+
+  markAll() {
+    this.setState(function (s) {
+      return { episodes: s.episodes.map(function (e) { return Object.assign({}, e, { seen: true }); }) };
+    });
+  }
+
+  renderVals() {
+    var self = this;
+    var eps = this.state.episodes;
+    var watched = eps.filter(function (e) { return e.seen; }).length;
+    var firstUnseen = eps.find(function (e) { return !e.seen; });
+    return {
+      watched: watched,
+      total: eps.length,
+      pct: Math.round((watched / eps.length) * 100),
+      markAll: function () { self.markAll(); },
+      episodes: eps.map(function (e) {
+        return {
+          code: 'E' + (e.n < 10 ? '0' + e.n : e.n),
+          title: e.title,
+          runtime: e.runtime,
+          date: e.date,
+          isNext: !!firstUnseen && firstUnseen.n === e.n,
+          rowBg: !!firstUnseen && firstUnseen.n === e.n ? '#181513' : 'transparent',
+          titleColor: e.seen ? '#7d746c' : '#f4efe8',
+          markBg: e.seen ? '#e8a33d' : 'transparent',
+          markBorder: e.seen ? '#e8a33d' : '#3a3431',
+          markInk: e.seen ? '#171009' : 'transparent',
+          toggle: function () { self.toggle(e.n); }
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

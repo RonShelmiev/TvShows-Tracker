@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'Space Grotesk', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #35e0c3; } a:hover { color: #7cf0dc; }
+    button { font-family: inherit; border: 0; background: none; padding: 0; cursor: pointer; color: inherit; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #05131a; color: #dff2f4; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="padding: 54px 18px 0 18px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #35e0c3;">// Tracker</div>
+    <button aria-label="Search" style="width: 44px; height: 44px; margin-right: -10px; display: flex; align-items: center; justify-content: flex-end;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6f97a4" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg>
+    </button>
+  </div>
+
+  <div style="margin: 8px 18px 0 18px; position: relative; border: 1px solid #17414f; background: #0a1e28; padding: 18px; display: flex; flex-direction: column; gap: 16px; overflow: hidden;">
+    <div style="position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 3px);"></div>
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;">
+      <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #6f97a4;">Resume</div>
+        <div style="font-size: 26px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em;">Vault City</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #35e0c3;">S03E07 · The Long Drive</div>
+      </div>
+      <div style="text-align: right; flex: 0 0 auto;">
+        <div style="font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -0.03em;">65<span style="font-size: 16px; color: #6f97a4;">%</span></div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6f97a4; margin-top: 4px;">12 left</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 3px;">
+      <sc-for list="{{heroSegments}}" as="seg" hint-placeholder-count="20">
+        <div style="flex: 1; height: 14px; background: {{seg.bg}};"></div>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button style="flex: 1; height: 46px; background: #35e0c3; color: #04201b; font-weight: 700; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#04201b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+        Watched
+      </button>
+      <button style="width: 46px; height: 46px; border: 1px solid #17414f; display: flex; align-items: center; justify-content: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6f97a4" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <div style="padding: 22px 18px 10px 18px; display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #6f97a4;">
+    <span>Queue</span>
+    <span>04 active</span>
+  </div>
+
+  <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+      <div style="padding: 13px 18px; border-top: 1px solid #10303c; display: flex; flex-direction: column; gap: 9px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+          <span style="font-size: 16px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.title}}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{r.countColor}}; flex: 0 0 auto;">{{r.watched}}/{{r.total}}</span>
+        </div>
+        <div style="display: flex; gap: 2px;">
+          <sc-for list="{{r.segments}}" as="seg" hint-placeholder-count="16">
+            <div style="flex: 1; height: 6px; background: {{seg.bg}};"></div>
+          </sc-for>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6f97a4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.epCode}} · {{r.epTitle}}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: {{r.statusColor}}; flex: 0 0 auto;">{{r.status}}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="border-top: 1px solid #17414f; background: #071a22; padding: 14px 18px 26px 18px; display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;">
+    <span style="color: #35e0c3;">[ Queue ]</span>
+    <span style="color: #52798a;">Find</span>
+    <span style="color: #52798a;">Airing</span>
+    <span style="color: #52798a;">You</span>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview": {"width": 390, "height": 844}}'>
+class Component extends DCLogic {
+  segments(watched, total, count, onColor, offColor) {
+    var filled = Math.round((watched / total) * count);
+    var out = [];
+    for (var i = 0; i < count; i++) {
+      out.push({ bg: i < filled ? onColor : offColor });
+    }
+    return out;
+  }
+
+  renderVals() {
+    var self = this;
+    var pad = function (n) { return n < 10 ? '0' + n : String(n); };
+    var raw = [
+      { title: 'Ash & Ember', season: 2, ep: 4, epTitle: 'Kindling', watched: 14, total: 20, status: 'On pace' },
+      { title: 'Nightingale', season: 1, ep: 9, epTitle: 'Static', watched: 8, total: 16, status: '2 behind' },
+      { title: 'Border Country', season: 4, ep: 2, epTitle: 'Dry Season', watched: 31, total: 48, status: 'On pace' },
+      { title: 'The Quiet Hour', season: 1, ep: 3, epTitle: 'Low Tide', watched: 2, total: 8, status: 'New' }
+    ];
+    return {
+      heroSegments: this.segments(22, 34, 20, '#35e0c3', '#123240'),
+      rows: raw.map(function (r) {
+        var behind = r.status.indexOf('behind') > -1;
+        return {
+          title: r.title,
+          watched: r.watched,
+          total: r.total,
+          epCode: 'S' + pad(r.season) + 'E' + pad(r.ep),
+          epTitle: r.epTitle,
+          status: r.status,
+          statusColor: behind ? '#ff5f9e' : '#52798a',
+          countColor: behind ? '#ff5f9e' : '#6f97a4',
+          segments: self.segments(r.watched, r.total, 16, behind ? '#ff5f9e' : '#35e0c3', '#123240')
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
