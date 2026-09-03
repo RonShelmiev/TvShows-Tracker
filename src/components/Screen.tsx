@@ -19,7 +19,7 @@ export function Screen({ children, style }: { children: React.ReactNode; style?:
 
   return (
     <View style={[styles.root, style]}>
-      <View pointerEvents="none" style={styles.glow}>
+      <View style={styles.glow}>
         <Svg width="100%" height="100%">
           <Defs>
             <RadialGradient id={blue} cx="18%" cy="0%" rx="72%" ry="100%">
@@ -42,5 +42,12 @@ export function Screen({ children, style }: { children: React.ReactNode; style?:
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  glow: { position: 'absolute', left: 0, right: 0, top: 0, height: GLOW_HEIGHT },
+  glow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: GLOW_HEIGHT,
+    pointerEvents: 'none',
+  },
 });
