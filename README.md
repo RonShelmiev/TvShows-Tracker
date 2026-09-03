@@ -19,6 +19,9 @@ Scan the QR code with **Expo Go** on your phone (App Store / Play Store). `npm r
 web` opens it in a browser instead, which is handy for a quick look but not the
 real target.
 
+To install it properly, with its own icon on the home screen, see
+[INSTALL.md](INSTALL.md).
+
 ```bash
 npm run typecheck   # tsc --noEmit
 npm test            # jest
