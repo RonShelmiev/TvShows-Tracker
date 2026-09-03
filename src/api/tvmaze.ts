@@ -1,6 +1,11 @@
 import type { Episode, ScheduleEntry, ShowSummary } from './types';
 
-const BASE = 'https://api.tvmaze.com';
+/**
+ * TVmaze direct. The API allows browser requests, so the web build calls it the
+ * same way the phone does — but if a deployment ever hits a CORS wall, point
+ * EXPO_PUBLIC_TVMAZE_BASE at a proxy and nothing else has to change.
+ */
+const BASE = process.env.EXPO_PUBLIC_TVMAZE_BASE ?? 'https://api.tvmaze.com';
 const TIMEOUT_MS = 12_000;
 
 export class TvmazeError extends Error {

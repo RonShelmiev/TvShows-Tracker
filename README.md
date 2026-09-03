@@ -20,7 +20,8 @@ web` opens it in a browser instead, which is handy for a quick look but not the
 real target.
 
 To install it properly, with its own icon on the home screen, see
-[INSTALL.md](INSTALL.md).
+[INSTALL.md](INSTALL.md). On an iPhone the free route is `npm run deploy`
+(Vercel) followed by Add to Home Screen in Safari — no Apple account needed.
 
 ```bash
 npm run typecheck   # tsc --noEmit
@@ -70,3 +71,6 @@ design/                  the design canvas the UI was built from
 - Specials (TVmaze gives them a null episode number) are left out of tracking.
 - TVmaze has no "trending" endpoint, so Browse rests on today's schedule rather
   than a popularity list.
+- The web build is a real PWA: `app/+html.tsx` carries the iOS install metadata
+  and `public/sw.js` caches the shell so it opens offline. `EXPO_PUBLIC_TVMAZE_BASE`
+  overrides the API host if a deployment ever needs to proxy it.

@@ -1,7 +1,11 @@
 # Getting it onto your phone
 
-Three routes, cheapest first. All of them start with the repo checked out on a
-computer and `npm install` run once.
+Several routes. All of them start with the repo checked out on a computer and
+`npm install` run once.
+
+**On an iPhone and not wanting to pay Apple? Skip to [route 3](#3-iphone-free--install-it-from-the-web-recommended)** —
+deploy the web build and add it to the home screen. Real icon, works offline,
+never expires, no Mac needed.
 
 ---
 
@@ -42,29 +46,54 @@ works offline, and needs nothing from your computer.
 
 ---
 
-## 3. iPhone, free
+## 3. iPhone, free — install it from the web (recommended)
 
-Apple does not let you install an app on an iPhone for free without a Mac in the
-loop somewhere. So there are exactly two free routes.
+This is the best free route and it needs no Mac, no Apple account, no cable and
+no 7-day renewal. You deploy the web build once, then add it to the home screen:
+iOS gives it a real icon, opens it fullscreen with no Safari chrome, and it keeps
+working offline.
 
-### 3a. No Mac — Expo Go
+**Deploy it (once, ~3 minutes):**
 
-This is the only free way onto an iPhone without a Mac, and it is route 1 above.
-Everything this app uses ships inside Expo Go — expo-image, expo-linear-gradient,
-expo-haptics, react-native-svg, async-storage, expo-router — so nothing is
-missing or stubbed out; you get the real app, running inside another app.
+```bash
+npm install -g vercel
+npm run deploy          # vercel --prod
+```
 
-What you give up: no icon on the home screen (you open Expo Go first), and a
-computer on the same Wi-Fi running `npx expo start` each time.
+Answer the prompts (link to a new project, accept the defaults — `vercel.json`
+already says how to build and route it). You get a URL like
+`tvshows-tracker.vercel.app`. Free tier, no card.
 
-Your tracked shows persist between sessions — they live in Expo Go's storage for
-this project — but they are gone if you delete Expo Go or clear its data.
+**Put it on the phone:**
 
-### 3b. A Mac you can borrow — a real app, free, 7 days at a time
+1. Open that URL in **Safari** on the iPhone (Safari specifically — this is how
+   iOS installs web apps)
+2. Share button → **Add to Home Screen** → Add
 
-A free Apple ID can sign an app for your own phone. It gets a real icon and runs
-with no computer attached, but the signature expires after **7 days** and the app
-stops opening until you re-sign it.
+That is it. The icon appears on your home screen and launching it looks like any
+other app — no address bar, no tabs, dark status bar.
+
+**What you get:** everything in the app, offline-capable (a service worker caches
+the shell, and your tracked shows and episode lists are stored on the phone).
+
+**What you give up:**
+
+- **No push notifications** for shows airing. iOS supports web push for installed
+  web apps, but it needs a server sending them — it is not in this app yet.
+- **No haptic tick** when marking an episode; the web has no equivalent.
+- **Storage is Safari's.** Your progress lives in the phone's local storage for
+  that site. Installed web apps keep it far longer than a browser tab, but iOS
+  can still clear it if you go a long time without opening the app, or if you
+  clear website data. An export/import of your library would remove this risk and
+  is not built yet.
+
+**Updating it later:** `npm run deploy` again. The phone picks up the new version
+next time you open it — no reinstall, nothing to approve.
+
+## 4. iPhone, free — a real native build (needs a Mac)
+
+Only worth it if you want notifications or the haptics. A free Apple ID can sign
+the app for your own phone, but the signature expires after **7 days**.
 
 ```bash
 npx expo prebuild --platform ios
@@ -75,23 +104,13 @@ In Xcode: plug the phone in, pick it as the run target, open Signing &
 Capabilities, set Team to your personal Apple ID, press Run. First launch needs
 Settings → General → VPN & Device Management → trust the developer.
 
-To renew, plug in and press Run again. Do that **before** it expires and while
-the bundle id stays `com.tvshowstracker.app`: it installs over the top and your
-progress survives. Let it lapse and delete the app instead, and iOS throws the
-data away with it.
+To renew, plug in and press Run again **before** it expires and while the bundle
+id stays `com.tvshowstracker.app` — it installs over the top and your progress
+survives. Let it lapse and delete the app instead, and iOS bins the data with it.
+[SideStore](https://sidestore.io) or AltStore can re-sign over Wi-Fi so you only
+need the Mac for the first build.
 
-**Renewing without the Mac each week:** [SideStore](https://sidestore.io) or
-AltStore installs onto the phone and re-signs apps over Wi-Fi automatically, so
-you only need the Mac for the first build. You still need the Mac (or a paid
-account) to produce the `.ipa` in the first place — there is no way to build one
-from Windows or Linux.
-
-### What free does not get you
-
-Notifications when a show airs need a real build, and on iPhone that means one of
-the routes above rather than Expo Go. Everything else in the app works identically.
-
-### If you would rather pay
+## 5. iPhone, paid
 
 $99/year for an Apple Developer account gets `npm run build:ios`, install over
 the air, and a signature that lasts a year instead of a week.
