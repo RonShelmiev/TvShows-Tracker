@@ -42,33 +42,59 @@ works offline, and needs nothing from your computer.
 
 ---
 
-## 3. iPhone — a real installed app
+## 3. iPhone, free
 
-Apple makes this the awkward one. Pick whichever fits:
+Apple does not let you install an app on an iPhone for free without a Mac in the
+loop somewhere. So there are exactly two free routes.
 
-**With an Apple Developer account ($99/year)** — the clean route:
+### 3a. No Mac — Expo Go
 
-```bash
-eas login && eas init
-npm run build:ios
-```
+This is the only free way onto an iPhone without a Mac, and it is route 1 above.
+Everything this app uses ships inside Expo Go — expo-image, expo-linear-gradient,
+expo-haptics, react-native-svg, async-storage, expo-router — so nothing is
+missing or stubbed out; you get the real app, running inside another app.
 
-EAS walks you through registering your phone as a test device, then gives you a
-link to install over the air. Good for a year.
+What you give up: no icon on the home screen (you open Expo Go first), and a
+computer on the same Wi-Fi running `npx expo start` each time.
 
-**With a Mac, no money** — build and sideload with a free Apple ID:
+Your tracked shows persist between sessions — they live in Expo Go's storage for
+this project — but they are gone if you delete Expo Go or clear its data.
+
+### 3b. A Mac you can borrow — a real app, free, 7 days at a time
+
+A free Apple ID can sign an app for your own phone. It gets a real icon and runs
+with no computer attached, but the signature expires after **7 days** and the app
+stops opening until you re-sign it.
 
 ```bash
 npx expo prebuild --platform ios
 open ios/*.xcworkspace
 ```
 
-In Xcode: pick your phone as the target, set a Team under Signing, press Run.
-A free Apple ID signs the app for **7 days**, after which it stops opening and
-you plug in and run it again.
+In Xcode: plug the phone in, pick it as the run target, open Signing &
+Capabilities, set Team to your personal Apple ID, press Run. First launch needs
+Settings → General → VPN & Device Management → trust the developer.
 
-**Neither** — stay on Expo Go (route 1). It is the only way onto an iPhone
-without a Mac or a paid account.
+To renew, plug in and press Run again. Do that **before** it expires and while
+the bundle id stays `com.tvshowstracker.app`: it installs over the top and your
+progress survives. Let it lapse and delete the app instead, and iOS throws the
+data away with it.
+
+**Renewing without the Mac each week:** [SideStore](https://sidestore.io) or
+AltStore installs onto the phone and re-signs apps over Wi-Fi automatically, so
+you only need the Mac for the first build. You still need the Mac (or a paid
+account) to produce the `.ipa` in the first place — there is no way to build one
+from Windows or Linux.
+
+### What free does not get you
+
+Notifications when a show airs need a real build, and on iPhone that means one of
+the routes above rather than Expo Go. Everything else in the app works identically.
+
+### If you would rather pay
+
+$99/year for an Apple Developer account gets `npm run build:ios`, install over
+the air, and a signature that lasts a year instead of a week.
 
 ---
 
