@@ -32,6 +32,8 @@ const show: ShowSummary = {
   status: 'Running',
   summary: null,
   language: 'English',
+  rating: 8.2,
+  weight: 92,
 };
 
 function episode(season: number, number: number, airdate: string, runtime: number | null = 50): Episode {

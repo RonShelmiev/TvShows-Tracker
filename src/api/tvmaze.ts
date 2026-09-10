@@ -1,4 +1,4 @@
-import type { Episode, ScheduleEntry, ShowSummary } from './types';
+import type { CastMember, Episode, ScheduleEntry, ShowSummary } from './types';
 
 /**
  * TVmaze direct. The API allows browser requests, so the web build calls it the
@@ -96,7 +96,16 @@ export function parseShow(raw: Json | null | undefined): ShowSummary | null {
     status: str(raw.status),
     summary: stripHtml(str(raw.summary)),
     language: str(raw.language),
+    rating: num(raw.rating?.average),
+    weight: num(raw.weight),
   };
+}
+
+export function parseCastMember(raw: Json | null | undefined): CastMember | null {
+  const personId = num(raw?.person?.id);
+  const name = str(raw?.person?.name);
+  if (personId === null || !name) return null;
+  return { personId, name, character: str(raw?.character?.name) };
 }
 
 export function parseEpisode(raw: Json | null | undefined): Episode | null {
@@ -180,6 +189,49 @@ export async function getSchedule(
         network: str(entry?.show?.network?.name) ?? str(entry?.show?.webChannel?.name),
         airtime: str(entry?.airtime),
       });
+    }
+  }
+  return out;
+}
+
+/**
+ * Billed cast, in TVmaze's own order — the first few names are the leads, which
+ * is what makes them worth following to other shows.
+ */
+export async function getCast(showId: number, signal?: AbortSignal): Promise<CastMember[]> {
+  const raw = await get<Json[]>(`/shows/${showId}/cast`, signal, 24 * 60 * 60 * 1000);
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<number>();
+  const out: CastMember[] = [];
+  for (const entry of raw) {
+    const member = parseCastMember(entry);
+    // A person can be billed twice for two characters; they are still one lead.
+    if (member && !seen.has(member.personId)) {
+      seen.add(member.personId);
+      out.push(member);
+    }
+  }
+  return out;
+}
+
+/** Everything else this person has acted in. */
+export async function getPersonShows(
+  personId: number,
+  signal?: AbortSignal,
+): Promise<ShowSummary[]> {
+  const raw = await get<Json[]>(
+    `/people/${personId}/castcredits?embed=show`,
+    signal,
+    24 * 60 * 60 * 1000,
+  );
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<number>();
+  const out: ShowSummary[] = [];
+  for (const credit of raw) {
+    const show = parseShow(credit?._embedded?.show);
+    if (show && !seen.has(show.id)) {
+      seen.add(show.id);
+      out.push(show);
     }
   }
   return out;

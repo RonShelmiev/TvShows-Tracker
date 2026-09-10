@@ -1,24 +1,14 @@
-import { Link, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getSchedule, searchShows, TvmazeError } from '../../src/api/tvmaze';
 import type { ShowSummary } from '../../src/api/types';
 import { Icon } from '../../src/components/Icon';
-import { Poster } from '../../src/components/Poster';
 import { Screen } from '../../src/components/Screen';
+import { ShowResultRow } from '../../src/components/ShowResultRow';
 import { Chip, EmptyState, Label, Loading, Notice, Title } from '../../src/components/ui';
 import { episodeCode, showYears } from '../../src/model/progress';
-import { useLibrary } from '../../src/store/library';
 import { colors, radius, space, type as typeTokens } from '../../src/theme';
 
 const COUNTRIES = [
@@ -189,78 +179,14 @@ export default function BrowseScreen() {
             />
           ) : null
         }
-        renderItem={({ item }) => <ResultRow show={item.show} line={item.line} />}
+        renderItem={({ item }) => (
+          <ShowResultRow
+            show={item.show}
+            meta={item.line ?? [showYears(item.show), item.show.network, item.show.genres[0]].filter(Boolean).join(' · ')}
+          />
+        )}
       />
     </Screen>
-  );
-}
-
-function ResultRow({ show, line }: { show: ShowSummary; line?: string }) {
-  const { isTracked, addShow, busy } = useLibrary();
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const tracked = isTracked(show.id);
-  const adding = !!busy[show.id];
-
-  const meta =
-    line ??
-    [showYears(show), show.network, show.genres[0]].filter(Boolean).join(' · ');
-
-  const onTrack = async () => {
-    setError(null);
-    try {
-      await addShow(show);
-    } catch {
-      setError('Could not load that show');
-    }
-  };
-
-  return (
-    <View style={styles.row}>
-      <Link href={`/show/${show.id}`} asChild>
-        <Pressable style={styles.rowMain} accessibilityRole="button">
-          <Poster show={show} width={46} height={66} />
-          <View style={{ flex: 1, gap: 5 }}>
-            <Text style={styles.rowTitle} numberOfLines={1}>
-              {show.name}
-            </Text>
-            <Text style={styles.rowMeta} numberOfLines={1}>
-              {meta || 'TV series'}
-            </Text>
-            {error ? <Text style={styles.rowError}>{error}</Text> : null}
-          </View>
-        </Pressable>
-      </Link>
-
-      {tracked ? (
-        <Pressable
-          onPress={() => router.push(`/show/${show.id}`)}
-          accessibilityRole="button"
-          accessibilityLabel={`${show.name} is already tracked`}
-          style={styles.tracking}
-        >
-          <Icon name="check" size={14} color={colors.accent} strokeWidth={2.4} />
-          <Text style={styles.trackingText}>Tracking</Text>
-        </Pressable>
-      ) : (
-        <Pressable
-          onPress={onTrack}
-          disabled={adding}
-          accessibilityRole="button"
-          accessibilityLabel={`Track ${show.name}`}
-          style={({ pressed }) => [styles.track, pressed ? { opacity: 0.6 } : null]}
-        >
-          {adding ? (
-            <ActivityIndicator size="small" color={colors.textSecondary} />
-          ) : (
-            <>
-              <Icon name="plus" size={14} color={colors.textSecondary} strokeWidth={2.1} />
-              <Text style={styles.trackText}>Track</Text>
-            </>
-          )}
-        </Pressable>
-      )}
-    </View>
   );
 }
 
@@ -286,36 +212,4 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionMeta: { fontSize: 12, color: colors.textDim },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: space.screenX,
-    paddingVertical: 9,
-  },
-  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rowTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  rowMeta: { ...typeTokens.mono, fontSize: 11, color: colors.textFaint },
-  rowError: { fontSize: 11, color: colors.next },
-  track: {
-    height: 38,
-    paddingHorizontal: 14,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.borderControl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  trackText: { fontSize: 13, fontWeight: '500', color: colors.textSecondary },
-  tracking: {
-    height: 38,
-    paddingHorizontal: 14,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceButton,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  trackingText: { fontSize: 13, fontWeight: '500', color: colors.accent },
 });

@@ -12,6 +12,16 @@ export type ShowSummary = {
   status: string | null;
   summary: string | null;
   language: string | null;
+  /** TVmaze's own 0-10 average, when enough people have voted. */
+  rating: number | null;
+  /** TVmaze's 0-100 popularity weight — only ever a tie-breaker. */
+  weight: number | null;
+};
+
+export type CastMember = {
+  personId: number;
+  name: string;
+  character: string | null;
 };
 
 export type Episode = {

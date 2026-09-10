@@ -37,6 +37,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Shows', tabBarIcon: tab('tv') }} />
       <Tabs.Screen name="browse" options={{ title: 'Browse', tabBarIcon: tab('compass') }} />
+      <Tabs.Screen name="picks" options={{ title: 'Picks', tabBarIcon: tab('sparkle') }} />
       <Tabs.Screen name="airing" options={{ title: 'Airing', tabBarIcon: tab('calendar') }} />
       <Tabs.Screen name="you" options={{ title: 'You', tabBarIcon: tab('user') }} />
     </Tabs>

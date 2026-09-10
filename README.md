@@ -34,6 +34,7 @@ npm test            # jest
 | --- | --- |
 | `app/(tabs)/index.tsx` | My Shows — up-next card, per-show progress, one tap to mark the next episode |
 | `app/(tabs)/browse.tsx` | Search TVmaze, plus what is on today; "Track" adds a show |
+| `app/(tabs)/picks.tsx` | Recommendations derived from the cast and genres of what you watch |
 | `app/(tabs)/airing.tsx` | Aired-but-unwatched episodes and upcoming air dates, from tracked shows only (no network) |
 | `app/(tabs)/you.tsx` | Totals — episodes watched, time watched, time left |
 | `app/show/[id]/index.tsx` | Show detail — overall progress, per-season bars |
@@ -51,6 +52,29 @@ and the progress bars can never disagree. Everything else is derived:
 
 That logic lives in `src/model/progress.ts` as pure functions, covered by
 `src/model/__tests__/progress.test.ts`.
+
+## How the picks work
+
+TVmaze has no recommendations endpoint, so `src/model/recommend.ts` builds them
+from the two signals it does expose — the people in a show, and its genres:
+
+1. Your heaviest-watched shows become **anchors**, weighted by episodes watched,
+   so a show you finished counts for more than one you sampled.
+2. Their billed cast is fetched, and the people who recur across several anchors
+   rank highest.
+3. Whatever else those people have acted in becomes the candidate pool.
+4. Candidates are scored on shared cast (60%), how well their genres match your
+   watching (30%), and TVmaze's rating (10%), then anything you already track is
+   removed.
+
+Because the trail back to your library is kept, every pick states its case —
+"Because you watch Vault City · Imelda Roche is in both" — rather than asking you
+to trust a number. A thin library yields few people, so results are topped up
+from today's schedule in genres you watch.
+
+The fan-out is budgeted against TVmaze's rate limit (roughly 20 calls per 10
+seconds): at most 5 anchors, 6 cast each, 12 people followed, 4 requests in
+flight. Results are cached for 12 hours and recomputed when the library changes.
 
 ## Layout
 

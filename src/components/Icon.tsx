@@ -16,7 +16,8 @@ export type IconName =
   | 'calendar'
   | 'user'
   | 'trash'
-  | 'refresh';
+  | 'refresh'
+  | 'sparkle';
 
 type Props = {
   name: IconName;
@@ -76,6 +77,12 @@ export function Icon({ name, size = 22, color = colors.text, strokeWidth = 1.7 }
         <>
           <Path d="M4 7h16M9.5 7V5.5A1.5 1.5 0 0111 4h2a1.5 1.5 0 011.5 1.5V7" {...stroke} />
           <Path d="M6.5 7l1 12a1.5 1.5 0 001.5 1.4h6a1.5 1.5 0 001.5-1.4l1-12" {...stroke} />
+        </>
+      )}
+      {name === 'sparkle' && (
+        <>
+          <Path d="M11 3.5c0 3.6 1.6 5.2 5.2 5.2-3.6 0-5.2 1.6-5.2 5.2 0-3.6-1.6-5.2-5.2-5.2 3.6 0 5.2-1.6 5.2-5.2z" {...stroke} />
+          <Path d="M17.8 14.4c0 1.8.8 2.6 2.6 2.6-1.8 0-2.6.8-2.6 2.6 0-1.8-.8-2.6-2.6-2.6 1.8 0 2.6-.8 2.6-2.6z" {...stroke} />
         </>
       )}
       {name === 'refresh' && (
