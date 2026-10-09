@@ -2,7 +2,10 @@ import type { Episode, ShowSummary } from '../../api/types';
 import type { TrackedShow } from '../progress';
 import {
   buildTaste,
+  genreCandidates,
+  genreScore,
   librarySignature,
+  matchedGenres,
   rankRecommendations,
   scoreCandidate,
   type Candidate,
@@ -41,14 +44,19 @@ function episodes(showId: number, count: number): Episode[] {
   }));
 }
 
-function tracked(summary: ShowSummary, total: number, watched: number): TrackedShow {
+function tracked(
+  summary: ShowSummary,
+  total: number,
+  watched: number,
+  lastWatchedAt: number | null = null,
+): TrackedShow {
   const eps = episodes(summary.id, total);
   return {
     show: summary,
     episodes: eps,
     watched: eps.slice(0, watched).map((e) => e.id),
     addedAt: 0,
-    lastWatchedAt: null,
+    lastWatchedAt,
     episodesFetchedAt: null,
   };
 }
@@ -57,24 +65,49 @@ const vault = show(1, 'Vault City', ['Drama', 'Crime']);
 const ember = show(2, 'Ash & Ember', ['Drama']);
 const comedy = show(3, 'Loose Ends', ['Comedy']);
 
+const DAY = 24 * 60 * 60 * 1000;
+const LONG_AGO = NOW.getTime() - 200 * DAY;
+
 describe('buildTaste', () => {
-  it('weights genres by episodes watched, not by show count', () => {
-    const taste = buildTaste([tracked(vault, 40, 30), tracked(comedy, 10, 10)], NOW);
-    // 30 drama+crime episodes against 10 comedy ones.
-    expect(taste.genres.get('Drama')).toBeCloseTo(0.75);
-    expect(taste.genres.get('Crime')).toBeCloseTo(0.75);
-    expect(taste.genres.get('Comedy')).toBeCloseTo(0.25);
+  it('weights genres by episodes watched, with diminishing returns', () => {
+    // Both finished: 36 drama+crime episodes against 9 comedy ones -> sqrt 6 vs 3.
+    const taste = buildTaste([tracked(vault, 36, 36), tracked(comedy, 9, 9)], NOW);
+    expect(taste.genres.get('Drama')).toBeCloseTo(6 / 9);
+    expect(taste.genres.get('Crime')).toBeCloseTo(6 / 9);
+    expect(taste.genres.get('Comedy')).toBeCloseTo(3 / 9);
   });
 
-  it('orders anchors by how much you have watched', () => {
-    const taste = buildTaste([tracked(comedy, 10, 4), tracked(vault, 40, 30)], NOW);
-    expect(taste.anchors.map((a) => a.show.id)).toEqual([1, 3]);
-    expect(taste.anchors[0].share).toBeCloseTo(30 / 34);
+  it('counts a show you are watching now above a bigger one you finished', () => {
+    const taste = buildTaste([tracked(vault, 25, 25), tracked(comedy, 20, 9)], NOW);
+    // Finished: sqrt(25) = 5. Watching: sqrt(9) * 2 = 6.
+    expect(taste.anchors.map((a) => a.show.id)).toEqual([3, 1]);
+    expect(taste.anchors[0].watching).toBe(true);
+    expect(taste.anchors[1].watching).toBe(false);
+    expect(taste.genres.get('Comedy')).toBeGreaterThan(taste.genres.get('Drama') ?? 0);
   });
 
-  it('ignores shows you have barely started', () => {
+  it('treats an unfinished show left alone for months as paused, not current', () => {
+    const recent = buildTaste([tracked(comedy, 20, 9, NOW.getTime() - DAY)], NOW);
+    const stale = buildTaste([tracked(comedy, 20, 9, LONG_AGO)], NOW);
+    expect(recent.anchors[0].watching).toBe(true);
+    expect(stale.anchors[0].watching).toBe(false);
+    expect(stale.anchors[0].weight).toBeLessThan(recent.anchors[0].weight);
+  });
+
+  it('uses a show you have just started watching', () => {
     const taste = buildTaste([tracked(vault, 40, 30), tracked(comedy, 10, 1)], NOW);
+    expect(taste.anchors.map((a) => a.show.id)).toContain(3);
+  });
+
+  it('ignores a single episode of a show you have since abandoned', () => {
+    const taste = buildTaste([tracked(vault, 40, 30), tracked(comedy, 10, 1, LONG_AGO)], NOW);
     expect(taste.anchors.map((a) => a.show.id)).toEqual([1]);
+    // It still says something about your genres.
+    expect(taste.genres.get('Comedy')).toBeGreaterThan(0);
+  });
+
+  it('records the languages you watch', () => {
+    expect(buildTaste([tracked(vault, 40, 30)], NOW).languages).toEqual(new Set(['English']));
   });
 
   it('returns no anchors when nothing is watched', () => {
@@ -190,9 +223,40 @@ describe('rankRecommendations', () => {
     expect(ranked[0].reason).toBe('Because you watch Vault City');
   });
 
-  it('falls back to a genre explanation when there is no cast link', () => {
-    const ranked = rankRecommendations([{ show: show(10, 'New', ['Drama']), via: [] }], taste);
-    expect(ranked[0].reason).toBe('More drama, which you watch a lot of');
+  it('explains a genre pick by naming the closest show you watch', () => {
+    const ranked = rankRecommendations([{ show: show(10, 'New', ['Drama', 'Crime']), via: [] }], taste);
+    expect(ranked[0].reason).toBe('Drama + Crime, like Vault City');
+    expect(ranked[0].detail).toBe("You're watching Vault City now · Drama, Crime");
+    expect(ranked[0].genres).toEqual(['Drama', 'Crime']);
+  });
+
+  it('does not claim you are watching a show you finished', () => {
+    const finished = buildTaste([tracked(vault, 30, 30)], NOW);
+    const ranked = rankRecommendations([{ show: show(10, 'New', ['Crime']), via: [] }], finished);
+    expect(ranked[0].reason).toBe('Crime, like Vault City');
+    expect(ranked[0].detail).toBe('Crime');
+  });
+
+  it('drops a cast-linked show in a genre you never watch', () => {
+    const ranked = rankRecommendations(
+      [
+        { show: show(10, 'Bake Off', ['Food']), via: [{ personName: 'Jo', anchorId: 1 }] },
+        { show: show(11, 'Untagged', []), via: [{ personName: 'Jo', anchorId: 1 }] },
+      ],
+      taste,
+    );
+    expect(ranked.map((r) => r.show.id)).toEqual([11]);
+  });
+
+  it('ranks a strong genre match above a cast link in a weak one', () => {
+    const ranked = rankRecommendations(
+      [
+        { show: show(10, 'Genre', ['Drama', 'Crime']), via: [] },
+        { show: show(11, 'Cast', ['Drama', 'Sports', 'Music']), via: [{ personName: 'Jo', anchorId: 2 }] },
+      ],
+      taste,
+    );
+    expect(ranked[0].show.id).toBe(10);
   });
 
   it('respects the limit and returns the best first', () => {
@@ -217,6 +281,62 @@ describe('rankRecommendations', () => {
 
   it('returns nothing when every candidate is already tracked', () => {
     expect(rankRecommendations([{ show: vault, via: [] }], taste)).toEqual([]);
+  });
+});
+
+describe('genreScore', () => {
+  const taste = buildTaste([tracked(vault, 36, 36), tracked(comedy, 9, 9)], NOW);
+
+  it('scores your favourite genres highest', () => {
+    expect(genreScore(show(10, 'A', ['Drama', 'Crime']), taste)).toBeCloseTo(1);
+    expect(genreScore(show(10, 'A', ['Drama']), taste)).toBeGreaterThan(
+      genreScore(show(11, 'B', ['Comedy']), taste),
+    );
+  });
+
+  it('dilutes the match for genres you never watch', () => {
+    expect(genreScore(show(10, 'A', ['Drama']), taste)).toBeGreaterThan(
+      genreScore(show(11, 'B', ['Drama', 'Western']), taste),
+    );
+  });
+
+  it('is zero for a show with no genres', () => {
+    expect(genreScore(show(10, 'A', []), taste)).toBe(0);
+  });
+
+  it('lists matched genres most-watched first', () => {
+    expect(matchedGenres(show(10, 'A', ['Western', 'Comedy', 'Drama']), taste)).toEqual(['Drama', 'Comedy']);
+  });
+});
+
+describe('genreCandidates', () => {
+  const taste = buildTaste([tracked(vault, 36, 36), tracked(comedy, 9, 9)], NOW);
+
+  it('keeps well-rated shows in your genres and drops the rest', () => {
+    const french = { ...show(13, 'Policier', ['Drama', 'Crime']), language: 'French' };
+    const pool = [
+      show(10, 'Good crime', ['Crime', 'Drama'], 8.2),
+      show(11, 'Poor crime', ['Crime', 'Drama'], 5.1),
+      show(12, 'Western', ['Western'], 9),
+      french,
+      vault,
+    ];
+    expect(genreCandidates(pool, taste).map((c) => c.show.id)).toEqual([10]);
+  });
+
+  it('admits an unrated show only when it is popular', () => {
+    const known = { ...show(10, 'Known', ['Drama'], null), weight: 95 };
+    const obscure = { ...show(11, 'Obscure', ['Drama'], null), weight: 20 };
+    expect(genreCandidates([known, obscure], taste).map((c) => c.show.id)).toEqual([10]);
+  });
+
+  it('dedupes, puts the best match first and respects the limit', () => {
+    const pool = [
+      show(10, 'Drama only', ['Drama'], 7),
+      show(11, 'Drama crime', ['Drama', 'Crime'], 7),
+      show(11, 'Drama crime', ['Drama', 'Crime'], 7),
+    ];
+    expect(genreCandidates(pool, taste, 1).map((c) => c.show.id)).toEqual([11]);
   });
 });
 

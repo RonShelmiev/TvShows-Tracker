@@ -195,6 +195,40 @@ export async function getSchedule(
 }
 
 /**
+ * Shows from streaming services airing today. Web episodes embed their show
+ * rather than nesting it, so this is parsed separately from the TV schedule.
+ */
+export async function getWebShowsToday(date: string, signal?: AbortSignal): Promise<ShowSummary[]> {
+  const raw = await get<Json[]>(
+    `/schedule/web?date=${encodeURIComponent(date)}`,
+    signal,
+    5 * 60 * 1000,
+  );
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<number>();
+  const out: ShowSummary[] = [];
+  for (const entry of raw) {
+    const show = parseShow(entry?._embedded?.show);
+    if (show && !seen.has(show.id)) {
+      seen.add(show.id);
+      out.push(show);
+    }
+  }
+  return out;
+}
+
+/**
+ * One page (250 shows, in id order) of TVmaze's full index. There is no
+ * search-by-genre endpoint, so this is the only way to get a wide pool of shows
+ * to match genres against. Pages past the end come back 404.
+ */
+export async function getShowIndexPage(page: number, signal?: AbortSignal): Promise<ShowSummary[]> {
+  const raw = await get<Json[]>(`/shows?page=${page}`, signal, 24 * 60 * 60 * 1000);
+  if (!Array.isArray(raw)) return [];
+  return raw.map(parseShow).filter((s): s is ShowSummary => s !== null);
+}
+
+/**
  * Billed cast, in TVmaze's own order — the first few names are the leads, which
  * is what makes them worth following to other shows.
  */

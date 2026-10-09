@@ -1,10 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getCast, getPersonShows, getSchedule, TvmazeError } from '../api/tvmaze';
+import {
+  getCast,
+  getPersonShows,
+  getSchedule,
+  getShowIndexPage,
+  getWebShowsToday,
+  TvmazeError,
+} from '../api/tvmaze';
 import type { ShowSummary } from '../api/types';
 import {
   buildTaste,
+  genreCandidates,
   librarySignature,
   rankRecommendations,
   type Candidate,
@@ -12,18 +20,32 @@ import {
 } from '../model/recommend';
 import { useLibrary } from './library';
 
-const STORAGE_KEY = 'tvtracker:recs:v1';
+const STORAGE_KEY = 'tvtracker:recs:v2';
 const FRESH_FOR_MS = 12 * 60 * 60 * 1000;
 
 /**
  * TVmaze allows roughly 20 calls per 10 seconds, and this is the only screen
  * that fans out, so the budget is spent deliberately: cast for a handful of
- * your heaviest shows, then credits for the people who actually recur.
+ * your heaviest shows, credits for the people who actually recur, then a few
+ * index pages and today's schedules as the pool for genre matching.
  */
-const MAX_ANCHORS = 5;
+const MAX_ANCHORS = 4;
 const CAST_PER_ANCHOR = 6;
-const MAX_PEOPLE = 12;
+const MAX_PEOPLE = 10;
 const CONCURRENCY = 4;
+
+/**
+ * The index is ~250 shows a page in id order. Which pages are read rotates by
+ * day, and again on every manual refresh, so the genre picks do not go stale.
+ */
+const INDEX_PAGES = 3;
+const INDEX_RANGE = 240;
+
+function indexPages(seed: number): number[] {
+  const stride = Math.floor(INDEX_RANGE / INDEX_PAGES);
+  const start = (seed * 37) % INDEX_RANGE;
+  return Array.from({ length: INDEX_PAGES }, (_, i) => (start + i * stride) % INDEX_RANGE);
+}
 
 type Cached = { at: number; signature: string; items: Recommendation[] };
 
@@ -66,12 +88,14 @@ export function useRecommendations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const running = useRef<AbortController | null>(null);
+  const refreshes = useRef(0);
 
   const signature = librarySignature(shows);
 
   const compute = useCallback(
     async (force: boolean) => {
       running.current?.abort();
+      if (force) refreshes.current += 1;
       const controller = new AbortController();
       running.current = controller;
 
@@ -156,23 +180,31 @@ export function useRecommendations() {
           }
         });
 
-        // 4. A thin library yields few people, so top up from what is on today
-        //    in the genres you watch.
-        if (candidates.length < 5) {
-          const schedule = await settle(getSchedule('US', todayISO(), controller.signal), []);
-          for (const entry of schedule) {
-            if (taste.tracked.has(entry.show.id)) continue;
-            if (!entry.show.genres.some((genre) => (taste.genres.get(genre) ?? 0) > 0)) continue;
-            candidates.push({ show: entry.show, via: [] });
-          }
-        }
-
+        // 4. Genre matches from a broad pool: a slice of TVmaze's index plus
+        //    what is on TV and streaming today.
+        const day = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
+        const today = todayISO();
+        const pools = await mapLimit(
+          [
+            ...indexPages(day + refreshes.current).map(
+              (page) => () => getShowIndexPage(page, controller.signal),
+            ),
+            () =>
+              getSchedule('US', today, controller.signal).then((entries) =>
+                entries.map((entry) => entry.show),
+              ),
+            () => getWebShowsToday(today, controller.signal),
+          ],
+          CONCURRENCY,
+          (load) => settle(load(), [] as ShowSummary[]),
+        );
         if (controller.signal.aborted) return;
+        candidates.push(...genreCandidates(pools.flat(), taste));
 
         const ranked = rankRecommendations(candidates, taste);
         if (ranked.length === 0) {
           setItems([]);
-          setError('Nothing new found — TVmaze knows little about the cast of your shows.');
+          setError('Nothing new found in your genres — pull to refresh for a different batch.');
           return;
         }
 

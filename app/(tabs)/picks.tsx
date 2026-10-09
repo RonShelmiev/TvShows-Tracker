@@ -1,12 +1,20 @@
-import React from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { Icon } from '../../src/components/Icon';
 import { Screen } from '../../src/components/Screen';
 import { ShowResultRow } from '../../src/components/ShowResultRow';
-import { EmptyState, Label, Loading, Notice, PrimaryButton, Title } from '../../src/components/ui';
+import { Chip, EmptyState, Label, Loading, Notice, PrimaryButton, Title } from '../../src/components/ui';
 import { showYears } from '../../src/model/progress';
 import { useRecommendations } from '../../src/store/recommendations';
 import { colors, space, type as typeTokens } from '../../src/theme';
@@ -21,16 +29,35 @@ function agoLabel(at: number | null): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
+const MAX_GENRE_CHIPS = 6;
+
 export default function PicksScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { items, loading, error, updatedAt, refresh, hasLibrary, hasWatched } =
     useRecommendations();
+  const [genre, setGenre] = useState<string | null>(null);
+
+  // Your genres in the order they lead your picks, so the chips mirror the list.
+  const genres = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of items) {
+      item.genres.forEach((g, i) => counts.set(g, (counts.get(g) ?? 0) + (i === 0 ? 2 : 1)));
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, MAX_GENRE_CHIPS)
+      .map(([g]) => g);
+  }, [items]);
+
+  // A refresh can drop the chosen genre; fall back to everything rather than an empty list.
+  const activeGenre = genre !== null && genres.includes(genre) ? genre : null;
+  const shown = activeGenre ? items.filter((item) => item.genres.includes(activeGenre)) : items;
 
   const empty = !hasLibrary
     ? {
         title: 'Track something first',
-        body: 'Picks come from the cast and genres of the shows you watch, so there is nothing to go on yet.',
+        body: 'Picks come from the genres and cast of the shows you watch, so there is nothing to go on yet.',
         action: (
           <PrimaryButton
             label="Find a show"
@@ -42,8 +69,8 @@ export default function PicksScreen() {
       }
     : !hasWatched
       ? {
-          title: 'Watch a couple of episodes',
-          body: 'Once you have marked a few episodes, this fills up with shows that share their cast and genres.',
+          title: 'Watch an episode',
+          body: 'Once you have marked an episode or two, this fills up with shows in the same genres, weighted toward what you are watching now.',
           action: (
             <PrimaryButton
               label="Go to my shows"
@@ -58,7 +85,7 @@ export default function PicksScreen() {
   return (
     <Screen>
       <FlatList
-        data={empty ? [] : items}
+        data={empty ? [] : shown}
         keyExtractor={(item) => String(item.show.id)}
         contentContainerStyle={{ paddingTop: insets.top + 10, paddingBottom: 24 }}
         refreshControl={
@@ -72,7 +99,7 @@ export default function PicksScreen() {
           <View>
             <View style={styles.header}>
               <View style={{ gap: 4, flexShrink: 1 }}>
-                <Label>Based on what you have watched</Label>
+                <Label>Based on what you watch</Label>
                 <Title>Picks</Title>
               </View>
               {empty ? null : (
@@ -87,16 +114,29 @@ export default function PicksScreen() {
               )}
             </View>
 
+            {!empty && genres.length > 1 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chips}
+              >
+                <Chip label="All" active={activeGenre === null} onPress={() => setGenre(null)} />
+                {genres.map((g) => (
+                  <Chip key={g} label={g} active={activeGenre === g} onPress={() => setGenre(g)} />
+                ))}
+              </ScrollView>
+            ) : null}
+
             {!empty && (items.length > 0 || updatedAt !== null) ? (
               <Text style={styles.updated}>
-                {items.length} suggestion{items.length === 1 ? '' : 's'}
+                {shown.length} suggestion{shown.length === 1 ? '' : 's'}
                 {updatedAt ? ` · updated ${agoLabel(updatedAt)}` : ''}
               </Text>
             ) : null}
 
             {error ? <Notice text={error} tone="error" onRetry={refresh} /> : null}
             {loading && items.length === 0 ? (
-              <Loading label="Reading the cast of your shows" />
+              <Loading label="Matching your genres and cast" />
             ) : null}
           </View>
         }
@@ -144,6 +184,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: space.screenX, paddingTop: 16 },
   updated: {
     ...typeTokens.mono,
     fontSize: 11,
