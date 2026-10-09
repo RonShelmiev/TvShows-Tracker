@@ -23,6 +23,9 @@ self.addEventListener('fetch', (event) => {
   // TVmaze and poster art: straight to the network, never served stale.
   if (url.origin !== self.location.origin) return;
 
+  // The page asking whether a newer deploy is live — must reach the server.
+  if (url.searchParams.has('update-check')) return;
+
   // Navigations: the app is a single page, so any route falls back to the shell.
   if (request.mode === 'navigate') {
     event.respondWith(
